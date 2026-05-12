@@ -1,8 +1,6 @@
 import graph_creation
 import heapq
 
-from parsing import ParsingError
-
 
 class Algo:
 
@@ -26,7 +24,6 @@ class Algo:
 
         rev.reverse()
         return {node: conn for node, conn in rev}
-
 
     @staticmethod
     def dijkestra(

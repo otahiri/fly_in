@@ -38,26 +38,27 @@ class Drone:
     def choose_zone(self, connection: Connection | None) -> None:
         if not connection:
             return
-        if any([self.state == State.WAITING, connection.size >= connection.max_cap, connection.hub.size >= connection.hub.cap]):
+        if (
+            connection.size >= connection.max_cap
+            or connection.hub.size >= connection.hub.cap
+        ):
+            self.state = State.WAITING
             return
-        self.state = (
-                State.WAITING
-                if any([connection.hub.zone == "restricted",])
-                else State.READY
-                )
         self.destination = connection
+        self.destination.size += 1
+        self.state = State.READY
 
-    def move_drone(self, connection: Connection | None) -> None:
-        if not self.destination or not connection:
+    def move_drone(self) -> None:
+        if not self.destination:
             return
         if self.state == State.WAITING:
-            self.state = State.READY
-        elif self.state == State.READY:
-            self.zone.size -= 1
-            connection.size += 1
-            self.zone = self.destination.hub
-            self.zone.size += 1
             self.destination.size -= 1
+            self.state = State.READY
+            return
+        self.zone.size -= 1
+        self.zone = self.destination.hub
+        self.destination.size -= 1
+        self.zone.size += 1
 
 
 class Graph:

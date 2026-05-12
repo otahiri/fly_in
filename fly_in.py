@@ -16,16 +16,21 @@ def main():
             if len(line.strip()) and not line.strip().startswith("#")
         ]
     graph = Graph(lines)
-    while any([drone.zone != graph.finish for drone in graph.drones]):
-        print(", ".join([drone.zone.name for drone in graph.drones]))
+    while True:
+        if all([drone.zone == graph.finish for drone in graph.drones]):
+            break
+        print(", ".join([' '.join([drone.zone.name, str(drone.zone.size)]) for drone in graph.drones]))
         step += 1
         print(step)
         for drone in graph.drones:
+            if drone.zone == graph.finish:
+                continue
             choice = algo.Algo.dijkestra(graph, drone.zone, graph.finish)
             drone.choose_zone(choice)
         for drone in graph.drones:
-            drone.move_drone(choice)
-        time.sleep(0)
+            if drone.zone == graph.finish:
+                continue
+            drone.move_drone()
     print(", ".join([drone.zone.name for drone in graph.drones]))
 
 
