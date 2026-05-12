@@ -2,7 +2,7 @@ import re
 import sys
 
 if __name__ == "__main__":
-    hub_regex = r"^hub:\s+.*\\s\d\s\d\s\[+.*\]"
+    hub_regex = r"^hub:\s+.*\s-?\d+\s-?\d+\s\[(.*?)\]$"
     start_regex = r""
     finish_regex = r""
     drone_num_regex = r""
@@ -14,8 +14,9 @@ if __name__ == "__main__":
     connections = []
 
     for line in open(sys.argv[1], 'r'):
-        if not line:
+        if not len(line.strip()) or line.strip().startswith('#'):
             continue
+        print(line)
         line.strip()
         if re.search(hub_regex, line):
             hubs.append(line)
@@ -28,7 +29,7 @@ if __name__ == "__main__":
         elif re.search(connections_regex, line):
             connections.append(line)
 
-    print(hubs)
+    print(len(hubs))
     # print(start)
     # print(finish)
     # print(drone_num)
