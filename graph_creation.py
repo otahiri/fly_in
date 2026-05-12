@@ -4,8 +4,8 @@ import parsing
 
 
 class State(Enum):
-    MOVING = 1
-    STATIC = 2
+    WAITING = 1
+    READY = 2
 
 
 class Hub:
@@ -16,39 +16,48 @@ class Hub:
         self.cod: tuple = (hub.x, hub.y)
         self.color = hub.color
         self.zone = hub.zone
-        self.cap = hub.max_drones
+        self.cap = hub.max_drones if hub.max_drones else 1
         self.size = 0
         self.connections: list[Connection] = []
-
-
-class Drone:
-    def __init__(self, id: int, zone: Hub) -> None:
-        self.id = id
-        self.zone: Hub
-        self.state: State = State.STATIC
-        self.destination: Hub
-        self.move_drone(zone)
-
-    def move_drone(self, zone: Hub) -> None:
-        if self.state == State.MOVING:
-            self.state = State.STATIC
-            self.zone = self.destination
-            self.zone.size += 1
-            return
-        if zone.zone == "restricted":
-            self.state = State.MOVING
-            self.destination = zone
-            return
-        else:
-            self.zone = zone
-            self.zone.size += 1
-            self.state = State.STATIC
 
 
 class Connection:
     def __init__(self, hub: Hub, cap: int) -> None:
         self.hub: Hub = hub
         self.max_cap: int = cap
+        self.size = 0
+
+
+class Drone:
+    def __init__(self, id: int, start: Hub) -> None:
+        self.id = id
+        self.zone: Hub = start
+        self.state: State = State.READY
+        self.destination: Connection | None = None
+
+    def choose_zone(self, connection: Connection | None) -> None:
+        if not connection:
+            return
+        if any([self.state == State.WAITING, connection.size >= connection.max_cap, connection.hub.size >= connection.hub.cap]):
+            return
+        self.state = (
+                State.WAITING
+                if any([connection.hub.zone == "restricted",])
+                else State.READY
+                )
+        self.destination = connection
+
+    def move_drone(self, connection: Connection | None) -> None:
+        if not self.destination or not connection:
+            return
+        if self.state == State.WAITING:
+            self.state = State.READY
+        elif self.state == State.READY:
+            self.zone.size -= 1
+            connection.size += 1
+            self.zone = self.destination.hub
+            self.zone.size += 1
+            self.destination.size -= 1
 
 
 class Graph:

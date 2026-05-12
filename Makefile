@@ -3,6 +3,8 @@ all: run
 
 run:
 	python3 fly_in.py maps/challenger/01_the_impossible_dream.txt
+visual:
+	python3 visualizer.py maps/challenger/01_the_impossible_dream.txt
 
 debug:
 

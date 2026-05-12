@@ -1,32 +1,48 @@
 import graph_creation
 import heapq
 
+from parsing import ParsingError
+
 
 class Algo:
 
     @staticmethod
-    def build_path(came_from: dict, end: graph_creation.Hub, start: graph_creation.Hub):
-        path = [end]
-        name = end.name
-        while True:
-            path.append(came_from[name])
-            name = came_from[name].name
-            if name == start.name:
-                break
-        return path
+    def build_path(
+        parent_node: dict,
+        parent_edge: dict,
+        start: graph_creation.Hub,
+        end: graph_creation.Hub,
+    ) -> dict:
+        if start.name == end.name:
+            return {}
+        rev: list = []
+        node = end.name
+        while node != start.name:
+            if node not in parent_node or node not in parent_edge.keys():
+                raise ValueError("unsolvable map")
+            parent = parent_node[node]
+            rev.append((parent, parent_edge[node]))
+            node = parent
+
+        rev.reverse()
+        return {node: conn for node, conn in rev}
+
 
     @staticmethod
     def dijkestra(
         graph: graph_creation.Graph,
         start: graph_creation.Hub,
         end: graph_creation.Hub,
-    ) -> list:
+    ) -> graph_creation.Connection | None:
+        if start.name == end.name:
+            return None
 
         distances: dict = {hub.name: float("inf") for hub in graph.hubs}
 
         distances[start.name] = 0
 
-        came_from: dict = {}
+        parent_node: dict[str, str] = {}
+        parent_edge: dict[str, graph_creation.Connection] = {}
         heap = [(0, id(start), start)]
 
         while heap:
@@ -34,13 +50,20 @@ class Algo:
             if current_cost > distances[current_node.name]:
                 continue
             for connection in current_node.connections:
-                neighbor = connection.hub
-                neighbor_cost = 1 + int(neighbor.zone == "restricted")
+                neighbor = connection
+                neighbor_cost = (
+                    1
+                    + int(neighbor.hub.zone == "restricted")
+                    + int(connection.size >= connection.max_cap)
+                    + int(connection.hub.size >= connection.hub.cap)
+                )
                 potential_cost = neighbor_cost + current_cost
-                if potential_cost < distances[neighbor.name]:
-                    distances[neighbor.name] = potential_cost
-                    came_from[neighbor.name] = current_node
+                if potential_cost < distances[neighbor.hub.name]:
+                    distances[neighbor.hub.name] = potential_cost
+                    parent_node[neighbor.hub.name] = current_node.name
+                    parent_edge[neighbor.hub.name] = connection
                     heapq.heappush(
-                        heap, (potential_cost, id(neighbor), neighbor)
+                        heap, (potential_cost, id(neighbor), neighbor.hub)
                     )
-        return list(reversed(Algo.build_path(came_from, end, start)))
+        path = Algo.build_path(parent_node, parent_edge, start, end)
+        return path[start.name]
