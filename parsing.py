@@ -9,7 +9,7 @@ class ParsingError(Exception):
 
 
 class ParsedHub:
-    def __init__(self, match: re.Match):
+    def __init__(self, match: re.Match, hub_type: str) -> None:
         raw_x = match.groupdict().get("x")
         raw_y = match.groupdict().get("y")
         valid_keys = ["zone", "color", "max_drones"]
@@ -33,8 +33,13 @@ class ParsedHub:
         if not self.color.lower() == "rainbow":
             if not webcolors.name_to_hex(self.color.lower()):
                 raise ValueError("invalid color")
-        self.max_drones: int = int(raw_max_drones) if raw_max_drones else 1
-        if self.max_drones <= 0:
+        self.max_drones = None
+        self.max_drones = (
+            int(raw_max_drones)
+            if raw_max_drones
+            else None if hub_type in ["start", "end"] else 1
+        )
+        if self.max_drones is not None and self.max_drones <= 0:
             raise ValueError("invalid drone num")
 
 
@@ -71,22 +76,26 @@ class GraphData:
                 if self.start:
                     raise ParsingError(f"duplicated start hub {line}")
                 try:
-                    self.start = ParsedHub(match)
+                    self.start = ParsedHub(match, "start")
                 except Exception as e:
                     raise ParsingError(f"{e} {line}")
                 if self.start.zone == "blocked":
                     raise ParsingError(f"start zone cannot be blocked {line}")
+                if '-' in self.start.name:
+                    raise ParsingError(f"invalid hub name {line}")
                 self.hubs.append(self.start)
 
             elif match := goal_regex.search(line):
                 if self.finish:
                     raise ParsingError(f"duplicated goal hub {line}")
                 try:
-                    self.finish = ParsedHub(match)
+                    self.finish = ParsedHub(match, "end")
                 except Exception:
                     raise ParsingError(f"invalid finish hub {line}")
                 if self.finish.zone == "blocked":
                     raise ParsingError(f"finish zone cannot be blocked {line}")
+                if '-' in self.finish.name:
+                    raise ParsingError(f"invalid hub name {line}")
                 self.hubs.append(self.finish)
 
             elif match := drone_num_regex.search(line):
@@ -103,9 +112,11 @@ class GraphData:
                     raise ParsingError(f"invalid drone number {line}")
             elif match := hub_regex.search(line):
                 try:
-                    self.hubs.append(ParsedHub(match))
+                    self.hubs.append(ParsedHub(match, "hub"))
                 except Exception:
                     raise ParsingError(f"invalid hub {line}")
+                if '-' in self.hubs[-1].name:
+                    raise ParsingError(f"invalid hub name {line}")
             elif match := connections_regex.search(line):
                 raw_cap = match.groupdict().get("cap")
                 raw_node_a = match.groupdict().get("node_a")
@@ -137,12 +148,30 @@ class GraphData:
             raise ParsingError("no start detected invalid map")
         if not self.finish:
             raise ParsingError("no finish detected invalid map")
-        for huba in self.hubs:
-            for hubb in self.hubs:
-                if huba.name != hubb.name and (huba.x, huba.y) == (
-                    hubb.x,
-                    hubb.y,
+        for hub_a in self.hubs:
+            for hub_b in self.hubs:
+                if hub_a.name != hub_b.name and (hub_a.x, hub_a.y) == (
+                    hub_b.x,
+                    hub_b.y,
                 ):
                     raise ParsingError(
-                        f"{huba.name} and {hubb.name} are overlapping"
+                        f"{hub_a.name} and {hub_b.name} are overlapping"
                     )
+        self.start.max_drones = (
+            self.drone_num
+            if self.start.max_drones is None
+            else self.start.max_drones
+        )
+        self.finish.max_drones = (
+            self.drone_num
+            if self.finish.max_drones is None
+            else self.finish.max_drones
+        )
+        if self.start.max_drones < self.drone_num:
+            raise ParsingError(
+                "start max drones cannot be less than the number of drones"
+            )
+        if self.finish.max_drones < self.drone_num:
+            raise ParsingError(
+                "finish max drones cannot be less than the number of drones"
+            )
