@@ -18,8 +18,9 @@ class Hub:
             if raw_meta and all("=" in word for word in raw_meta.split())
             else dict()
         )
-        if not all(word.lower() in valid_keys for word in meta.keys()):
-            raise ValueError
+        for word in meta.keys():
+            if word not in valid_keys:
+                raise ValueError
         self.name: str = str(match.groupdict().get("name"))
         self.x: int | None = int(raw_x) if raw_x else None
         self.y: int | None = int(raw_y) if raw_y else None
@@ -45,8 +46,8 @@ class Graph:
         )
         drone_num_regex = re.compile(r"^nb_drones:\s+(?P<num>-?\d+)")
         connections_regex = re.compile(
-            r"connection:\s+(?P<node_a>\S+)-(?P<node_b>\S+)"
-            r"(\[(<cap>max_link_capacity=/S+)\])?"
+            r"connection:\s+(?P<node_a>\S+)-(?P<node_b>\S+)\s?"
+            r"(\[?P<cap>max_link_capacity=\S+\])?"
         )
 
         idx = 0
@@ -72,7 +73,7 @@ class Graph:
                 try:
                     self.finish = Hub(match)
                 except Exception:
-                    ParsingError(f"invalid finish hub {line}")
+                    raise ParsingError(f"invalid finish hub {line}")
                 self.hubs.append(self.finish)
 
             elif match := drone_num_regex.search(line):
@@ -95,10 +96,10 @@ class Graph:
                         {
                             "node_a": match.groupdict().get("node_a"),
                             "node_b": match.groupdict().get("node_b"),
-                            "cap": match.groupdict().get("cap", 1),
+                            "cap": int(match.groupdict().get("cap", 1)),
                         }
                     )
-                except KeyError:
+                except Exception:
                     raise ParsingError(f"invalid connection {line}")
 
             else:

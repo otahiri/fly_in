@@ -11,7 +11,7 @@ def main():
             if len(line.strip()) and not line.strip().startswith("#")
         ]
     graph = Graph(lines)
-    print([hub.name for hub in graph.hubs if hub])
+    print(graph.connections)
 
 
 if __name__ == "__main__":
