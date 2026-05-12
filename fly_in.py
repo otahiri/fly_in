@@ -1,5 +1,6 @@
 import sys
-from parsing import ParsingError, Graph
+from graph_creation import Graph
+from parsing import ParsingError
 
 
 def main():
@@ -11,7 +12,7 @@ def main():
             if len(line.strip()) and not line.strip().startswith("#")
         ]
     graph = Graph(lines)
-    print(graph.connections)
+    print([hub.name for hub in graph.hubs])
 
 
 if __name__ == "__main__":
