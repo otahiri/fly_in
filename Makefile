@@ -2,7 +2,7 @@ all: run
 
 
 run:
-	python3 fly_in.py maps/challenger/01_the_impossible_dream.txt
+	python3 fly_in.py maps/hard/03_ultimate_challenge.txt
 
 debug:
 
