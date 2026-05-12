@@ -2,7 +2,7 @@ all: run
 
 
 run:
-	python3 fly_in.py maps/challenger/01_the_impossible_dream.txt
+	python3 fly_in.py maps/hard/01_maze_nightmare.txt
 
 visual:
 	python3 visualizer.py maps/challenger/01_the_impossible_dream.txt

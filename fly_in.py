@@ -1,7 +1,7 @@
 import sys
 from graph_creation import Drone, Graph, Hub
 from parsing import ParsingError
-import algo
+from algo import Dijkestra
 import time
 
 
@@ -16,22 +16,7 @@ def main():
             if len(line.strip()) and not line.strip().startswith("#")
         ]
     graph = Graph(lines)
-    while True:
-        if all([drone.zone == graph.finish for drone in graph.drones]):
-            break
-        print(", ".join([' '.join([drone.zone.name, str(drone.zone.size)]) for drone in graph.drones]))
-        step += 1
-        print(step)
-        for drone in graph.drones:
-            if drone.zone == graph.finish:
-                continue
-            choice = algo.Algo.dijkestra(graph, drone.zone, graph.finish)
-            drone.choose_zone(choice)
-        for drone in graph.drones:
-            if drone.zone == graph.finish:
-                continue
-            drone.move_drone()
-    print(", ".join([drone.zone.name for drone in graph.drones]))
+    Dijkestra.choose_zone(graph.drones[0], graph)
 
 
 if __name__ == "__main__":

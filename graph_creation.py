@@ -4,8 +4,10 @@ import parsing
 
 
 class State(Enum):
-    WAITING = 1
-    READY = 2
+    BLOCKED = 1
+    WAITING = 2
+    EXECUTING = 3
+    READY = 4
 
 
 class Hub:
@@ -19,6 +21,7 @@ class Hub:
         self.cap = hub.max_drones if hub.max_drones else 1
         self.size = 0
         self.connections: list[Connection] = []
+        self.moves_left = 0
 
 
 class Connection:
@@ -65,14 +68,24 @@ class Graph:
     def __init__(self, lines: list) -> None:
         parsed_graph = parsing.GraphData(lines)
         self.hubs = [Hub(hub) for hub in parsed_graph.hubs]
+
         start = Hub(parsed_graph.start)
         goal = Hub(parsed_graph.finish)
-        self.start = next(filter(lambda x: x.name == start.name, self.hubs))
-        self.finish = next(filter(lambda x: x.name == goal.name, self.hubs))
+
+        self.start: Hub = next(
+            filter(lambda x: x.name == start.name, self.hubs)
+        )
+        self.finish: Hub = next(
+            filter(lambda x: x.name == goal.name, self.hubs)
+        )
+
         self.drone_num = parsed_graph.drone_num
+        self.start.cap = self.drone_num
+        self.finish.cap = self.drone_num
         self.set_connections(parsed_graph.connections)
+
         self.drones: List[Drone] = [
-            Drone(id, self.start) for id in range(self.drone_num)
+            Drone(id + 1, self.start) for id in range(self.drone_num)
         ]
 
     def set_connections(self, connections: list) -> None:
