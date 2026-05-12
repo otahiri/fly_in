@@ -3,8 +3,11 @@ from parsing import ParsingError, Graph
 
 def main():
     graph = Graph()
-    for con in graph.connections:
-        print(con.groupdict()["node1"])
+    print(graph.drone_num)
+    print(graph.start)
+    print(graph.hubs)
+    print(graph.finish)
+    print(graph.connections)
 
 
 if __name__ == "__main__":
