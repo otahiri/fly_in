@@ -1,6 +1,7 @@
 import sys
 from graph_creation import Graph
 from parsing import ParsingError
+import algo
 
 
 def main():
@@ -12,7 +13,7 @@ def main():
             if len(line.strip()) and not line.strip().startswith("#")
         ]
     graph = Graph(lines)
-    print([hub.cap for hub in graph.hubs])
+    print(algo.Algo.dijkestra(graph, graph.start, graph.finish))
 
 
 if __name__ == "__main__":
