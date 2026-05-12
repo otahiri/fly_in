@@ -81,7 +81,7 @@ class GraphData:
                     raise ParsingError(f"{e} {line}")
                 if self.start.zone == "blocked":
                     raise ParsingError(f"start zone cannot be blocked {line}")
-                if '-' in self.start.name:
+                if "-" in self.start.name:
                     raise ParsingError(f"invalid hub name {line}")
                 self.hubs.append(self.start)
 
@@ -94,7 +94,7 @@ class GraphData:
                     raise ParsingError(f"invalid finish hub {line}")
                 if self.finish.zone == "blocked":
                     raise ParsingError(f"finish zone cannot be blocked {line}")
-                if '-' in self.finish.name:
+                if "-" in self.finish.name:
                     raise ParsingError(f"invalid hub name {line}")
                 self.hubs.append(self.finish)
 
@@ -115,7 +115,7 @@ class GraphData:
                     self.hubs.append(ParsedHub(match, "hub"))
                 except Exception:
                     raise ParsingError(f"invalid hub {line}")
-                if '-' in self.hubs[-1].name:
+                if "-" in self.hubs[-1].name:
                     raise ParsingError(f"invalid hub name {line}")
             elif match := connections_regex.search(line):
                 raw_cap = match.groupdict().get("cap")
@@ -127,6 +127,10 @@ class GraphData:
                 ):
                     raise ParsingError(f"duplicated connections {line}")
                 try:
+                    if raw_node_a not in [
+                        hub.name for hub in self.hubs
+                    ] or raw_node_b not in [hub.name for hub in self.hubs]:
+                        raise ValueError
                     self.connections.append(
                         {
                             "node_a": raw_node_a,

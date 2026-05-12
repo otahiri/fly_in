@@ -55,8 +55,10 @@ class Graph:
     def __init__(self, lines: list) -> None:
         parsed_graph = parsing.GraphData(lines)
         self.hubs = [Hub(hub) for hub in parsed_graph.hubs]
-        self.start = Hub(parsed_graph.start)
-        self.finish = Hub(parsed_graph.finish)
+        start = Hub(parsed_graph.start)
+        goal = Hub(parsed_graph.finish)
+        self.start = next(filter(lambda x: x.name == start.name, self.hubs))
+        self.finish = next(filter(lambda x: x.name == goal.name, self.hubs))
         self.drone_num = parsed_graph.drone_num
         self.set_connections(parsed_graph.connections)
         self.drones: List[Drone] = [
@@ -67,12 +69,11 @@ class Graph:
         hubs = {hub.name: hub for hub in self.hubs}
 
         for conn in connections:
-            hub_a_name = conn["node_a"]
-            hub_b_name = conn["node_b"]
-            capacity = conn["cap"]
-
-            hub_a = hubs.get(hub_a_name)
-            hub_b = hubs.get(hub_b_name)
+            a_name = conn.get("node_a")
+            b_name = conn.get("node_b")
+            capacity = conn.get("cap")
+            hub_a = hubs.get(a_name)
+            hub_b = hubs.get(b_name)
 
             if hub_a and hub_b:
                 hub_a.connections.append(Connection(hub_b, capacity))
