@@ -1,6 +1,6 @@
 import re
-import pygame
 from typing import List
+import webcolors
 
 
 class ParsingError(Exception):
@@ -30,11 +30,9 @@ class ParsedHub:
         if self.zone not in ["normal", "blocked", "restricted", "priority"]:
             raise ValueError("invalid zone type")
         self.color: str = meta.get("color", "None")
-        color_dict = pygame.color.__dict__.get("THECOLORS")
-        if not color_dict:
-            return
-        if self.color not in color_dict.keys():
-            raise ValueError("invalid color")
+        if not self.color.lower() == "rainbow":
+            if not webcolors.name_to_hex(self.color.lower()):
+                raise ValueError("invalid color")
         self.max_drones: int = int(raw_max_drones) if raw_max_drones else 1
         if self.max_drones <= 0:
             raise ValueError("invalid drone num")

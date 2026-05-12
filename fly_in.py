@@ -12,7 +12,12 @@ def main():
             if len(line.strip()) and not line.strip().startswith("#")
         ]
     graph = Graph(lines)
-    print([hub.name for hub in graph.hubs])
+    print(
+        [
+            [(hub.name, h.hub.name, h.max_cap) for h in hub.connections]
+            for hub in graph.hubs
+        ]
+    )
 
 
 if __name__ == "__main__":
