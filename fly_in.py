@@ -6,12 +6,12 @@ def main():
     lines = list()
     with open(sys.argv[1], "r") as map:
         lines = [
-            line.strip("\n")
+            line.strip()
             for line in map
             if len(line.strip()) and not line.strip().startswith("#")
         ]
     graph = Graph(lines)
-    print(graph.drone_num)
+    print([hub.name for hub in graph.hubs if hub])
 
 
 if __name__ == "__main__":
