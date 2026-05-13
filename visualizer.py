@@ -7,7 +7,7 @@ from typing import Dict, Iterable
 import pygame
 import webcolors
 
-import algo
+from algo import Dijkestra
 from graph_creation import Drone, Graph, Hub, State
 from parsing import ParsingError
 
@@ -118,12 +118,12 @@ def hub_pos(hub: Hub, layout: Layout) -> tuple[int, int]:
 
 def step_simulation(graph: Graph) -> None:
     # This intentionally mirrors fly_in.py's current loop logic exactly.
-    choice = None
     for drone in graph.drones:
-        choice = algo.Algo.dijkestra(graph, drone.zone, graph.finish)
-        drone.choose_zone(choice)
+        Dijkestra.choose_zone(drone, graph)
     for drone in graph.drones:
-        drone.move_drone(choice)
+        if drone.in_transit:
+            continue
+        Dijkestra.move_drone(drone)
 
 
 def draw_graph(
@@ -197,7 +197,7 @@ def draw_graph(
 
     hint = small_font.render(
         (
-            "Space pause/resume | Right single-step | "
+            "Space single-step | P pause/resume | Right single-step | "
             "Up/Down speed | R reset | Q/Esc quit"
         ),
         True,
@@ -227,7 +227,7 @@ def main() -> None:
     graph = load_graph(args.map_path)
     layout = compute_layout(graph.hubs, args.width, args.height)
 
-    paused = False
+    paused = True
     step_count = 0
     phase = 0.0
     error_text: str | None = None
@@ -246,13 +246,28 @@ def main() -> None:
                 if event.key in (pygame.K_q, pygame.K_ESCAPE):
                     running = False
                 elif event.key == pygame.K_SPACE:
+                    if paused and not error_text:
+                        if any(
+                            drone.zone != graph.finish for drone in graph.drones
+                        ):
+                            try:
+                                step_simulation(graph)
+                                step_count += 1
+                            except ValueError as err:
+                                error_text = str(err)
+                    else:
+                        paused = True
+                elif event.key == pygame.K_p:
                     paused = not paused
                 elif event.key == pygame.K_RIGHT and paused and not error_text:
                     if any(
                         drone.zone != graph.finish for drone in graph.drones
                     ):
-                        step_simulation(graph)
-                        step_count += 1
+                        try:
+                            step_simulation(graph)
+                            step_count += 1
+                        except ValueError as err:
+                            error_text = str(err)
                 elif event.key == pygame.K_r:
                     graph = load_graph(args.map_path)
                     layout = compute_layout(
@@ -260,7 +275,7 @@ def main() -> None:
                         args.width,
                         args.height,
                     )
-                    paused = False
+                    paused = True
                     step_count = 0
                     accumulated_ms = 0.0
                     error_text = None

@@ -5,12 +5,26 @@ import heapq
 class Dijkestra:
     @staticmethod
     def move_drone(drone: Drone):
-        pass
+        if not drone.destination:
+            return
+        drone.destination.size -= 1
+        drone.zone = drone.destination.hub
+        drone.destination = None
+        drone.zone.size += 1
+        drone.in_transit = drone.zone.zone == "restricted"
+        drone.visited.append(drone.zone.name)
 
     @staticmethod
     def choose_zone(drone: Drone, graph: Graph):
+        if drone.in_transit:
+            drone.in_transit = not drone.in_transit
+            return
+        if drone.destination is not None:
+            return
         zone: Hub | None = Dijkestra.algo(graph, drone.zone)
         if not zone:
+            return
+        if zone.name in drone.visited:
             return
         connection: Connection | None = next(
             filter(
@@ -20,8 +34,14 @@ class Dijkestra:
         )
         if not connection:
             return
-
-        print(connection.hub.name)
+        if (
+            connection.size >= connection.max_cap
+            or connection.hub.size >= connection.hub.cap
+        ):
+            return
+        drone.destination = connection
+        drone.destination.size += 1
+        drone.zone.size -= 1
 
     @staticmethod
     def build_path():
@@ -48,6 +68,8 @@ class Dijkestra:
 
             for connection in current_node.connections:
                 neighbor = connection.hub
+                if neighbor.zone == "blocked":
+                    continue
                 neighbor_cost = (
                     (
                         1

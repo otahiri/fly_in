@@ -21,7 +21,6 @@ class Hub:
         self.cap = hub.max_drones if hub.max_drones else 1
         self.size = 0
         self.connections: list[Connection] = []
-        self.moves_left = 0
 
 
 class Connection:
@@ -37,6 +36,8 @@ class Drone:
         self.zone: Hub = start
         self.state: State = State.READY
         self.destination: Connection | None = None
+        self.in_transit = False
+        self.visited = [self.zone.name]
 
     def choose_zone(self, connection: Connection | None) -> None:
         if not connection:
