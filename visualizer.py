@@ -167,7 +167,7 @@ def draw_graph(
         )
         surface.blit(zone_type_label, zone_type_rect)
 
-        name_label = small_font.render(hub.name, True, TEXT_COLOR)
+        name_label = small_font.render("--".join([hub.name[0:2], str(hub.size), str(hub.cap)]), True, TEXT_COLOR)
         name_rect = name_label.get_rect(center=(position[0], position[1] - 25))
         surface.blit(name_label, name_rect)
 

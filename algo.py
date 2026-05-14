@@ -1,6 +1,8 @@
 from graph_creation import Connection, Drone, Hub, Graph
 import heapq
 
+from parsing import ParsingError
+
 
 class Dijkestra:
     @staticmethod
@@ -11,7 +13,6 @@ class Dijkestra:
             drone.zone = drone.destination.hub
             drone.destination.size -= 1
             drone.destination = None
-            drone.zone.size += 1
             drone.in_transit = drone.zone.zone == "restricted"
             drone.visited.append(drone.zone.name)
 
@@ -45,6 +46,7 @@ class Dijkestra:
         drone.destination = connection
         drone.path = path
         drone.destination.size += 1
+        drone.destination.hub.size += 1
         drone.zone.size -= 1
 
     @staticmethod
@@ -79,8 +81,6 @@ class Dijkestra:
                 if neighbor.zone == "blocked":
                     continue
                 neighbor_cost = 2
-                neighbor_cost += int(neighbor.size >= neighbor.cap) * 3
-                neighbor_cost += int(connection.size >= connection.max_cap) * 3
                 neighbor_cost += int(connection.hub.zone == "restricted") * 2
                 neighbor_cost += neighbor.size
                 neighbor_cost = neighbor_cost // int(neighbor.zone == "priority") * 2 if neighbor.zone == "priority" else neighbor_cost
@@ -90,7 +90,11 @@ class Dijkestra:
                     distances[neighbor.name] = possible_cost
                     parent_edges[neighbor.name] = current_node
                     heapq.heappush(hq, (possible_cost, id(neighbor), neighbor))
-
-        return parent_edges[zone.name], Dijkestra.build_path(
+        try:
+            ret = parent_edges[zone.name]
+        except KeyError:
+            raise ParsingError("impossible map")
+        ret = None if ret.size >= ret.cap else ret
+        return ret, Dijkestra.build_path(
             parent_edges, zone, graph.finish
         )

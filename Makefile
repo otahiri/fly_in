@@ -2,10 +2,10 @@ all: run
 
 
 run:
-	python3 fly_in.py maps/challenger/01_the_impossible_dream.txt
+	python3 fly_in.py maps/easy//01_linear_path.txt
 
 visual:
-	python3 visualizer.py maps/challenger/01_the_impossible_dream.txt
+	python3 visualizer.py maps/challenger//01_the_impossible_dream.txt
 
 debug:
 

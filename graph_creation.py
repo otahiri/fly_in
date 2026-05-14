@@ -85,6 +85,7 @@ class Graph:
         self.start.cap = self.drone_num
         self.finish.cap = self.drone_num
         self.set_connections(parsed_graph.connections)
+        self.start.size = self.drone_num
 
         self.drones: List[Drone] = [
             Drone(id + 1, self.start) for id in range(self.drone_num)
