@@ -6,20 +6,25 @@ from parsing import ParsingError
 
 class Dijkestra:
     @staticmethod
-    def move_drone(drone: Drone):
+    def move_drone(drone: Drone) -> None:
         if not drone.destination:
             return
         if not drone.in_transit:
-            drone.zone = drone.destination.hub
+            drone.moved = True
             drone.destination.size -= 1
+            drone.connection = "-".join(
+                [drone.zone.name, drone.destination.hub.name]
+            )
+            drone.zone = drone.destination.hub
             drone.destination = None
             drone.in_transit = drone.zone.zone == "restricted"
             drone.visited.append(drone.zone.name)
 
     @staticmethod
-    def choose_zone(drone: Drone, graph: Graph):
+    def choose_zone(drone: Drone, graph: Graph) -> None:
+        drone.moved = False
         zone: Hub | None
-        path: dict
+        path: list[str]
         if drone.in_transit:
             drone.in_transit = False
             return
@@ -83,7 +88,11 @@ class Dijkestra:
                 neighbor_cost = 2
                 neighbor_cost += int(connection.hub.zone == "restricted") * 2
                 neighbor_cost += neighbor.size
-                neighbor_cost = neighbor_cost // int(neighbor.zone == "priority") * 2 if neighbor.zone == "priority" else neighbor_cost
+                neighbor_cost = (
+                    neighbor_cost // int(neighbor.zone == "priority") * 2
+                    if neighbor.zone == "priority"
+                    else neighbor_cost
+                )
 
                 possible_cost = neighbor_cost + current_cost
                 if possible_cost < distances[neighbor.name]:
@@ -95,6 +104,4 @@ class Dijkestra:
         except KeyError:
             raise ParsingError("impossible map")
         ret = None if ret.size >= ret.cap else ret
-        return ret, Dijkestra.build_path(
-            parent_edges, zone, graph.finish
-        )
+        return ret, Dijkestra.build_path(parent_edges, zone, graph.finish)

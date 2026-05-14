@@ -1,5 +1,5 @@
-import re
-from typing import List
+from re import Match, compile
+from typing import List, Any
 import webcolors
 
 
@@ -9,7 +9,7 @@ class ParsingError(Exception):
 
 
 class ParsedHub:
-    def __init__(self, match: re.Match, hub_type: str) -> None:
+    def __init__(self, match: Match[str], hub_type: str) -> None:
         raw_x = match.groupdict().get("x")
         raw_y = match.groupdict().get("y")
         valid_keys = ["zone", "color", "max_drones"]
@@ -46,20 +46,20 @@ class ParsedHub:
 class GraphData:
 
     def __init__(self, lines: List[str]) -> None:
-        hub_regex = re.compile(
-            r"^hub:\s+(?P<name>\S+)\s(?P<x>-?\d+)\s(?P<y>-?\d+)\s+"
-            r"(\[(?P<meta_data>.*?)\])?$"
+        hub_regex = compile(
+            r"^hub:\s+(?P<name>\S+)\s(?P<x>-?\d+)\s(?P<y>-?\d+)\s?"
+            r"(?:\s\[(?P<meta_data>.*?)\])?\s*$"
         )
-        start_regex = re.compile(
-            r"^start_hub:\s+(?P<name>\S+)\s+(?P<x>-?\d+)\s+(?P<y>-?\d+)\s+"
-            r"(\[(?P<meta_data>.*?)\])?$"
+        start_regex = compile(
+            r"^start_hub:\s+(?P<name>\S+)\s+(?P<x>-?\d+)\s+(?P<y>-?\d+)\s?"
+            r"(?:\s\[(?P<meta_data>.*?)\])?\s*$"
         )
-        goal_regex = re.compile(
-            r"^end_hub:\s+(?P<name>\S+)\s+(?P<x>-?\d+)\s+(?P<y>-?\d+)\s+"
-            r"(\[(?P<meta_data>.*?)\])?$"
+        goal_regex = compile(
+            r"^end_hub:\s+(?P<name>\S+)\s+(?P<x>-?\d+)\s+(?P<y>-?\d+)\s?"
+            r"(?:\s\[(?P<meta_data>.*?)\])?\s*$"
         )
-        drone_num_regex = re.compile(r"^nb_drones:\s+(?P<num>\S+)\s*$")
-        connections_regex = re.compile(
+        drone_num_regex = compile(r"^nb_drones:\s+(?P<num>\S+)\s*$")
+        connections_regex = compile(
             r"connection:\s+(?P<node_a>\S+)-(?P<node_b>\S+)"
             r"(?:\s+\[max_link_capacity=(?P<cap>-?\S+)\])?\s*$"
         )
@@ -68,8 +68,8 @@ class GraphData:
         self.start = None
         self.finish = None
         self.drone_num: int = -1
-        self.hubs: List = []
-        self.connections: List[dict] = []
+        self.hubs: List[ParsedHub] = []
+        self.connections: List[dict[str, Any]] = []
         for line in lines:
             idx += 1
             if match := start_regex.search(line):
@@ -147,7 +147,7 @@ class GraphData:
             raise ParsingError("invalid map")
         self.validate_graph()
 
-    def validate_graph(self):
+    def validate_graph(self) -> None:
         if not self.start:
             raise ParsingError("no start detected invalid map")
         if not self.finish:

@@ -4,9 +4,9 @@ from parsing import ParsingError
 from algo import Dijkestra
 
 
-def main():
-    step = 0
+def main() -> None:
     lines = list()
+
     with open(sys.argv[1], "r") as map:
         lines = [
             line.strip()
@@ -14,12 +14,6 @@ def main():
             if len(line.strip()) and not line.strip().startswith("#")
         ]
     graph = Graph(lines)
-    print(
-        " ".join(
-            [str(drone.id) + "-" + drone.zone.name for drone in graph.drones]
-        ),
-        step,
-    )
     while True:
         if graph.finish.size == graph.drone_num:
             break
@@ -27,15 +21,21 @@ def main():
             Dijkestra.choose_zone(drone, graph)
         for drone in sorted(graph.drones, key=lambda x: len(x.path))[::-1]:
             Dijkestra.move_drone(drone)
-        step += 1
         print(
             " ".join(
                 [
-                    str(drone.id) + "-" + drone.zone.name
+                    "D"
+                    + str(drone.id)
+                    + "-"
+                    + (
+                        drone.connection
+                        if drone.in_transit
+                        else drone.zone.name
+                    )
                     for drone in graph.drones
+                    if drone.moved
                 ]
             ),
-            step,
         )
 
 

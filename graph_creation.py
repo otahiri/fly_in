@@ -15,7 +15,7 @@ class Hub:
         if not hub:
             return
         self.name = hub.name
-        self.cod: tuple = (hub.x, hub.y)
+        self.cod: tuple[int | None, int | None] = (hub.x, hub.y)
         self.color = hub.color
         self.zone = hub.zone
         self.cap = hub.max_drones if hub.max_drones else 1
@@ -36,9 +36,11 @@ class Drone:
         self.zone: Hub = start
         self.state: State = State.READY
         self.destination: Connection | None = None
+        self.connection: str = ""
+        self.moved = False
         self.in_transit = False
         self.visited = [self.zone.name]
-        self.path: dict = {}
+        self.path: List[str] = []
 
     def choose_zone(self, connection: Connection | None) -> None:
         if not connection:
@@ -67,7 +69,7 @@ class Drone:
 
 
 class Graph:
-    def __init__(self, lines: list) -> None:
+    def __init__(self, lines: list[str]) -> None:
         parsed_graph = parsing.GraphData(lines)
         self.hubs = [Hub(hub) for hub in parsed_graph.hubs]
 
