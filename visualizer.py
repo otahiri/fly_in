@@ -42,10 +42,10 @@ def parse_args() -> argparse.Namespace:
         help="Simulation steps per second (default: 4)",
     )
     parser.add_argument(
-        "--width", type=int, default=1280, help="Window width (default: 1280)"
+        "--width", type=int, default=3560, help="Window width (default: 1280)"
     )
     parser.add_argument(
-        "--height", type=int, default=800, help="Window height (default: 800)"
+        "--height", type=int, default=1600, help="Window height (default: 800)"
     )
     return parser.parse_args()
 
@@ -155,15 +155,21 @@ def draw_graph(
     for hub in graph.hubs:
         position = hub_pos(hub, layout)
         radius = (
-            17 if hub.name in {graph.start.name, graph.finish.name} else 14
+            27 if hub.name in {graph.start.name, graph.finish.name} else 24
         )
         fill = hub_color(hub, phase)
         pygame.draw.circle(surface, fill, position, radius)
         pygame.draw.circle(surface, HUB_BORDER_COLOR, position, radius, 2)
 
-        label = small_font.render(hub.name, True, TEXT_COLOR)
-        label_rect = label.get_rect(center=(position[0], position[1] - 25))
-        surface.blit(label, label_rect)
+        zone_type_label = small_font.render(hub.zone, True, TEXT_COLOR)
+        zone_type_rect = zone_type_label.get_rect(
+            center=(position[0], position[1] - 41)
+        )
+        surface.blit(zone_type_label, zone_type_rect)
+
+        name_label = small_font.render(hub.name, True, TEXT_COLOR)
+        name_rect = name_label.get_rect(center=(position[0], position[1] - 25))
+        surface.blit(name_label, name_rect)
 
     grouped_drones: Dict[str, list[Drone]] = {}
     for drone in graph.drones:

@@ -38,6 +38,7 @@ class Drone:
         self.destination: Connection | None = None
         self.in_transit = False
         self.visited = [self.zone.name]
+        self.path: dict = {}
 
     def choose_zone(self, connection: Connection | None) -> None:
         if not connection:

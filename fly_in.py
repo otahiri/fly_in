@@ -21,13 +21,11 @@ def main():
         step,
     )
     while True:
-        if all([drone.zone == graph.finish for drone in graph.drones]):
+        if graph.finish.size == graph.drone_num:
             break
         for drone in graph.drones:
             Dijkestra.choose_zone(drone, graph)
-        for drone in graph.drones:
-            if drone.in_transit:
-                continue
+        for drone in sorted(graph.drones, key=lambda x: len(x.path))[::-1]:
             Dijkestra.move_drone(drone)
         step += 1
         print(

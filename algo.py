@@ -7,21 +7,24 @@ class Dijkestra:
     def move_drone(drone: Drone):
         if not drone.destination:
             return
-        drone.destination.size -= 1
-        drone.zone = drone.destination.hub
-        drone.destination = None
-        drone.zone.size += 1
-        drone.in_transit = drone.zone.zone == "restricted"
-        drone.visited.append(drone.zone.name)
+        if not drone.in_transit:
+            drone.zone = drone.destination.hub
+            drone.destination.size -= 1
+            drone.destination = None
+            drone.zone.size += 1
+            drone.in_transit = drone.zone.zone == "restricted"
+            drone.visited.append(drone.zone.name)
 
     @staticmethod
     def choose_zone(drone: Drone, graph: Graph):
+        zone: Hub | None
+        path: dict
         if drone.in_transit:
-            drone.in_transit = not drone.in_transit
+            drone.in_transit = False
             return
         if drone.destination is not None:
             return
-        zone: Hub | None = Dijkestra.algo(graph, drone.zone)
+        zone, path = Dijkestra.algo(graph, drone.zone)
         if not zone:
             return
         if zone.name in drone.visited:
@@ -40,20 +43,25 @@ class Dijkestra:
         ):
             return
         drone.destination = connection
+        drone.path = path
         drone.destination.size += 1
         drone.zone.size -= 1
 
     @staticmethod
-    def build_path():
-        pass
+    def build_path(parent_edges: dict, zone: Hub, finish: Hub) -> list:
+        path: list = []
+        while zone.name != finish.name:
+            path.append(zone)
+            zone = parent_edges[zone.name]
+        return path
 
     @staticmethod
-    def algo(graph: Graph, zone: Hub) -> Hub | None:
+    def algo(graph: Graph, zone: Hub) -> tuple:
 
         distances: dict = {hub.name: float("inf") for hub in graph.hubs}
         distances[graph.finish.name] = 0
         if zone.name == graph.finish.name:
-            return None
+            return None, None
 
         parent_edges: dict = {}
 
@@ -70,20 +78,19 @@ class Dijkestra:
                 neighbor = connection.hub
                 if neighbor.zone == "blocked":
                     continue
-                neighbor_cost = (
-                    (
-                        1
-                        + (neighbor.size >= neighbor.cap)
-                        + (connection.size >= connection.max_cap)
-                        + (connection.hub.zone == "restricted")
-                    )
-                    * 2
-                ) - int(neighbor.zone == "priority")
+                neighbor_cost = 2
+                neighbor_cost += int(neighbor.size >= neighbor.cap) * 3
+                neighbor_cost += int(connection.size >= connection.max_cap) * 3
+                neighbor_cost += int(connection.hub.zone == "restricted") * 2
+                neighbor_cost += neighbor.size
+                neighbor_cost = neighbor_cost // int(neighbor.zone == "priority") * 2 if neighbor.zone == "priority" else neighbor_cost
 
-                potential_cost = neighbor_cost + current_cost
-                if potential_cost < distances[neighbor.name]:
-                    distances[neighbor.name] = potential_cost
+                possible_cost = neighbor_cost + current_cost
+                if possible_cost < distances[neighbor.name]:
+                    distances[neighbor.name] = possible_cost
                     parent_edges[neighbor.name] = current_node
-                    heapq.heappush(hq, (potential_cost, id(neighbor), neighbor))
+                    heapq.heappush(hq, (possible_cost, id(neighbor), neighbor))
 
-        return parent_edges[zone.name]
+        return parent_edges[zone.name], Dijkestra.build_path(
+            parent_edges, zone, graph.finish
+        )
