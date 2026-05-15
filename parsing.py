@@ -30,7 +30,7 @@ class ParsedHub:
         if self.zone not in ["normal", "blocked", "restricted", "priority"]:
             raise ValueError("invalid zone type")
         self.color: str = meta.get("color", "None")
-        if not self.color.lower() == "rainbow":
+        if self.color.lower() != "rainbow" and self.color != "None":
             if not webcolors.name_to_hex(self.color.lower()):
                 raise ValueError("invalid color")
         self.max_drones = None
@@ -47,8 +47,8 @@ class GraphData:
 
     def __init__(self, lines: List[str]) -> None:
         hub_regex = compile(
-            r"^hub:\s+(?P<name>\S+)\s(?P<x>-?\d+)\s(?P<y>-?\d+)\s?"
-            r"(?:\s\[(?P<meta_data>.*?)\])?\s*$"
+            r"^hub:\s+(?P<name>\S+)\s(?P<x>-?\d+)\s(?P<y>-?\d+)"
+            r"(?:\s+\[(?P<meta_data>.*?)\]\s?)?"
         )
         start_regex = compile(
             r"^start_hub:\s+(?P<name>\S+)\s+(?P<x>-?\d+)\s+(?P<y>-?\d+)\s?"
@@ -70,6 +70,23 @@ class GraphData:
         self.drone_num: int = -1
         self.hubs: List[ParsedHub] = []
         self.connections: List[dict[str, Any]] = []
+        if match := drone_num_regex.search(lines[0]):
+            raw_num = str(match.groupdict().get("num"))
+            if not raw_num.isdigit():
+                raise ParsingError(f"invalid number of drones {lines[0]}")
+            if self.drone_num != -1:
+                raise ParsingError(f"duplicated drone number {lines[0]}")
+            try:
+                self.drone_num = int(str(raw_num))
+            except ValueError:
+                raise ParsingError(f"invalid drone number {lines[0]}")
+            if self.drone_num <= 0:
+                raise ParsingError(f"invalid drone number {lines[0]}")
+        else:
+            raise ParsingError(
+                f"invalid map drone count should be first line {lines[0]}"
+            )
+        lines = lines[1::]
         for line in lines:
             idx += 1
             if match := start_regex.search(line):
@@ -83,6 +100,9 @@ class GraphData:
                     raise ParsingError(f"start zone cannot be blocked {line}")
                 if "-" in self.start.name:
                     raise ParsingError(f"invalid hub name {line}")
+                if self.start.name in [hub.name for hub in self.hubs]:
+                    raise ParsingError(f"duplicated zones are not allowed \
+{line}")
                 self.hubs.append(self.start)
 
             elif match := goal_regex.search(line):
@@ -96,23 +116,19 @@ class GraphData:
                     raise ParsingError(f"finish zone cannot be blocked {line}")
                 if "-" in self.finish.name:
                     raise ParsingError(f"invalid hub name {line}")
+                if self.finish.name in [hub.name for hub in self.hubs]:
+                    raise ParsingError(f"duplicated zones are not allowed \
+{line}")
                 self.hubs.append(self.finish)
 
-            elif match := drone_num_regex.search(line):
-                raw_num = str(match.groupdict().get("num"))
-                if not raw_num.isdigit():
-                    raise ParsingError(f"invalid number of drones {line}")
-                if self.drone_num != -1:
-                    raise ParsingError(f"duplicated drone number {line}")
-                try:
-                    self.drone_num = int(str(raw_num))
-                except ValueError:
-                    raise ParsingError(f"invalid drone number {line}")
-                if self.drone_num <= 0:
-                    raise ParsingError(f"invalid drone number {line}")
             elif match := hub_regex.search(line):
                 try:
-                    self.hubs.append(ParsedHub(match, "hub"))
+                    hub = ParsedHub(match, "hub")
+                    if hub.name in [hub.name for hub in self.hubs]:
+                        raise ParsingError(f"duplicated zones are not allowed \
+{line}")
+
+                    self.hubs.append(hub)
                 except Exception:
                     raise ParsingError(f"invalid hub {line}")
                 if "-" in self.hubs[-1].name:
@@ -158,18 +174,12 @@ class GraphData:
                     hub_b.x,
                     hub_b.y,
                 ):
-                    raise ParsingError(
-                        f"{hub_a.name} and {hub_b.name} are overlapping"
-                    )
+                    raise ParsingError(f"{hub_a.name} and {hub_b.name} are overlapping")
         self.start.max_drones = (
-            self.drone_num
-            if self.start.max_drones is None
-            else self.start.max_drones
+            self.drone_num if self.start.max_drones is None else self.start.max_drones
         )
         self.finish.max_drones = (
-            self.drone_num
-            if self.finish.max_drones is None
-            else self.finish.max_drones
+            self.drone_num if self.finish.max_drones is None else self.finish.max_drones
         )
         if self.start.max_drones < self.drone_num:
             raise ParsingError(
