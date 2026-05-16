@@ -18,7 +18,7 @@ class Hub:
         self.cod: tuple[int | None, int | None] = (hub.x, hub.y)
         self.color = hub.color
         self.zone = hub.zone
-        self.cap = hub.max_drones if hub.max_drones else 1
+        self.cap = hub.cap if hub.cap else 1
         self.size = 0
         self.connections: list[Connection] = []
 

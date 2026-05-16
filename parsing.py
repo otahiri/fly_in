@@ -14,11 +14,12 @@ class ParsedHub:
         raw_y = match.groupdict().get("y")
         valid_keys = ["zone", "color", "max_drones"]
         raw_meta = match.groupdict().get("meta_data")
-        meta = (
-            dict(word.split("=") for word in raw_meta.split())
-            if raw_meta and all("=" in word for word in raw_meta.split())
-            else dict()
-        )
+        if raw_meta:
+            if any(['=' not in w and w not in valid_keys
+                    for w in raw_meta.split()]):
+                raise ValueError("invalid meta data")
+        meta = (dict(word.split("=") for word in raw_meta.split())
+                if raw_meta else dict())
         raw_max_drones = meta.get("max_drones")
         for word in meta.keys():
             if word not in valid_keys:
@@ -33,13 +34,16 @@ class ParsedHub:
         if self.color.lower() != "rainbow" and self.color != "None":
             if not webcolors.name_to_hex(self.color.lower()):
                 raise ValueError("invalid color")
-        self.max_drones = None
-        self.max_drones = (
+        self.cap = None
+        if raw_max_drones:
+            if not raw_max_drones.isdigit():
+                raise ValueError("invalid number of drones")
+        self.cap = (
             int(raw_max_drones)
             if raw_max_drones
             else None if hub_type in ["start", "end"] else 1
         )
-        if self.max_drones is not None and self.max_drones <= 0:
+        if self.cap is not None and self.cap <= 0:
             raise ValueError("invalid drone num")
 
 
@@ -129,8 +133,8 @@ class GraphData:
 {line}")
 
                     self.hubs.append(hub)
-                except Exception:
-                    raise ParsingError(f"invalid hub {line}")
+                except Exception as e:
+                    raise ParsingError(f"{e} {line}")
                 if "-" in self.hubs[-1].name:
                     raise ParsingError(f"invalid hub name {line}")
             elif match := connections_regex.search(line):
@@ -174,18 +178,19 @@ class GraphData:
                     hub_b.x,
                     hub_b.y,
                 ):
-                    raise ParsingError(f"{hub_a.name} and {hub_b.name} are overlapping")
-        self.start.max_drones = (
-            self.drone_num if self.start.max_drones is None else self.start.max_drones
-        )
-        self.finish.max_drones = (
-            self.drone_num if self.finish.max_drones is None else self.finish.max_drones
-        )
-        if self.start.max_drones < self.drone_num:
+                    raise ParsingError(f"{hub_a.name} and \
+{hub_b.name} are overlapping")
+        self.start.cap = (
+                self.drone_num if self.start.cap is None else self.start.cap
+                )
+        self.finish.cap = (
+                self.drone_num if self.finish.cap is None else self.finish.cap
+                           )
+        if self.start.cap < self.drone_num:
             raise ParsingError(
                 "start max drones cannot be less than the number of drones"
             )
-        if self.finish.max_drones < self.drone_num:
+        if self.finish.cap < self.drone_num:
             raise ParsingError(
                 "finish max drones cannot be less than the number of drones"
             )

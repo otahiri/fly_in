@@ -53,7 +53,7 @@ The parser expects:
 
 Supported hub metadata:
 - `zone=normal|blocked|restricted|priority`
-- `color=<named_color|rainbow>`
+- `color=<named_color|rainbow|None>`
 - `max_drones=<positive_integer>`
 
 ## Output format
