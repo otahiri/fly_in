@@ -12,9 +12,7 @@ class Dijkestra:
         if not drone.in_transit:
             drone.moved = True
             drone.destination.size -= 1
-            drone.connection = "-".join(
-                [drone.zone.name, drone.destination.hub.name]
-            )
+            drone.connection = (drone.zone, drone.destination.hub)
             drone.zone = drone.destination.hub
             drone.destination = None
             drone.in_transit = drone.zone.zone == "restricted"

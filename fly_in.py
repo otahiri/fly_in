@@ -1,7 +1,9 @@
 import sys
+from termcolor import colored
 from graph_creation import Graph
 from parsing import ParsingError
 from algo import Dijkestra
+from visualize import Renderer
 
 
 def main() -> None:
@@ -21,22 +23,7 @@ def main() -> None:
             Dijkestra.choose_zone(drone, graph)
         for drone in sorted(graph.drones, key=lambda x: len(x.path))[::-1]:
             Dijkestra.move_drone(drone)
-        print(
-            " ".join(
-                [
-                    "D"
-                    + str(drone.id)
-                    + "-"
-                    + (
-                        drone.connection
-                        if drone.in_transit
-                        else drone.zone.name
-                    )
-                    for drone in graph.drones
-                    if drone.moved
-                ]
-            ),
-        )
+        Renderer.print_moves(graph)
 
 
 if __name__ == "__main__":

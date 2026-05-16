@@ -45,11 +45,11 @@ make clean
 
 ## Input format (map file)
 The parser expects:
-- `nb_drones: <positive_integer>`
+- first line: `nb_drones: <positive_integer>`
 - exactly one `start_hub: <name> <x> <y> [metadata]`
 - exactly one `end_hub: <name> <x> <y> [metadata]`
 - zero or more `hub: <name> <x> <y> [metadata]`
-- connections as `connection: <hub1>-<hub2> [max_link_capacity=<n>]`
+- connections as `connection: <hub1>-<hub2> [max_link_capacity=<n>]` (both hubs should already exist for connection to be valid)
 
 Supported hub metadata:
 - `zone=normal|blocked|restricted|priority`

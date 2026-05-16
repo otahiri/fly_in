@@ -36,7 +36,7 @@ class Drone:
         self.zone: Hub = start
         self.state: State = State.READY
         self.destination: Connection | None = None
-        self.connection: str = ""
+        self.connection: tuple = ()
         self.moved = False
         self.in_transit = False
         self.visited = [self.zone.name]
