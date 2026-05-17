@@ -1,9 +1,13 @@
+"""Graph domain models used by the fly-in simulation."""
+
 from enum import Enum
 from typing import List
 import parsing
 
 
 class State(Enum):
+    """Represent execution state flags for drones."""
+
     BLOCKED = 1
     WAITING = 2
     EXECUTING = 3
@@ -11,7 +15,10 @@ class State(Enum):
 
 
 class Hub:
+    """Represent a graph node with zone metadata and capacities."""
+
     def __init__(self, hub: parsing.ParsedHub | None) -> None:
+        """Initialize a hub from parsed map data."""
         if not hub:
             return
         self.name = hub.name
@@ -24,14 +31,20 @@ class Hub:
 
 
 class Connection:
+    """Represent a bidirectional edge endpoint with link capacity."""
+
     def __init__(self, hub: Hub, cap: int) -> None:
+        """Create a connection toward a target hub."""
         self.hub: Hub = hub
         self.max_cap: int = cap
         self.size = 0
 
 
 class Drone:
+    """Represent a single drone moving through the graph."""
+
     def __init__(self, id: int, start: Hub) -> None:
+        """Initialize a drone at the start hub."""
         self.id = id
         self.zone: Hub = start
         self.state: State = State.READY
@@ -43,6 +56,7 @@ class Drone:
         self.path: List[str] = []
 
     def choose_zone(self, connection: Connection | None) -> None:
+        """Assign a destination when capacity constraints allow it."""
         if not connection:
             return
         if (
@@ -56,6 +70,7 @@ class Drone:
         self.state = State.READY
 
     def move_drone(self) -> None:
+        """Move the drone to its destination and update occupancies."""
         if not self.destination:
             return
         if self.state == State.WAITING:
@@ -69,7 +84,10 @@ class Drone:
 
 
 class Graph:
+    """Build and hold the simulation graph and drone collection."""
+
     def __init__(self, lines: list[str]) -> None:
+        """Create hubs, connections, and drones from raw map lines."""
         parsed_graph = parsing.GraphData(lines)
         self.hubs = [Hub(hub) for hub in parsed_graph.hubs]
 
@@ -85,6 +103,7 @@ class Graph:
 
         self.drone_num = parsed_graph.drone_num
         self.start.cap = self.drone_num
+        self.connections: list[Connection] = []
         self.finish.cap = self.drone_num
         self.set_connections(parsed_graph.connections)
         self.start.size = self.drone_num
@@ -94,6 +113,7 @@ class Graph:
         ]
 
     def set_connections(self, connections: list) -> None:
+        """Attach bidirectional links between hubs from parsed data."""
         hubs = {hub.name: hub for hub in self.hubs}
 
         for conn in connections:
@@ -104,5 +124,9 @@ class Graph:
             hub_b = hubs.get(b_name)
 
             if hub_a and hub_b:
-                hub_a.connections.append(Connection(hub_b, capacity))
-                hub_b.connections.append(Connection(hub_a, capacity))
+                conn_a = Connection(hub_b, capacity)
+                conn_b = Connection(hub_a, capacity)
+                self.connections.append(conn_a)
+                self.connections.append(conn_b)
+                hub_a.connections.append(conn_a)
+                hub_b.connections.append(conn_b)

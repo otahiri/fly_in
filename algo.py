@@ -1,3 +1,5 @@
+"""Pathfinding and movement selection for drone routing."""
+
 from graph_creation import Connection, Drone, Hub, Graph
 import heapq
 
@@ -5,14 +7,21 @@ from parsing import ParsingError
 
 
 class Dijkestra:
+    """Provide Dijkstra-style next-hop selection for drones."""
+
     @staticmethod
     def move_drone(drone: Drone) -> None:
+        """Apply the pending movement for a drone on the current turn."""
         if not drone.destination:
             return
         if not drone.in_transit:
             drone.moved = True
+            drone.connection = (
+                (drone.destination.size, drone.destination.max_cap),
+                drone.zone,
+                drone.destination.hub,
+            )
             drone.destination.size -= 1
-            drone.connection = (drone.zone, drone.destination.hub)
             drone.zone = drone.destination.hub
             drone.destination = None
             drone.in_transit = drone.zone.zone == "restricted"
@@ -20,6 +29,7 @@ class Dijkestra:
 
     @staticmethod
     def choose_zone(drone: Drone, graph: Graph) -> None:
+        """Pick the drone's next destination if one is available."""
         drone.moved = False
         zone: Hub | None
         path: list[str]
@@ -34,9 +44,8 @@ class Dijkestra:
         if zone.name in drone.visited:
             return
         connection: Connection | None = next(
-            filter(
-                lambda conn: conn.hub.name == zone.name, drone.zone.connections
-            ),
+            filter(lambda conn: conn.hub.name == zone.name,
+                   drone.zone.connections),
             None,
         )
         if not connection:
@@ -54,6 +63,7 @@ class Dijkestra:
 
     @staticmethod
     def build_path(parent_edges: dict, zone: Hub, finish: Hub) -> list:
+        """Build the backward path from a hub to the finish hub."""
         path: list = []
         while zone.name != finish.name:
             path.append(zone)
@@ -62,6 +72,7 @@ class Dijkestra:
 
     @staticmethod
     def algo(graph: Graph, zone: Hub) -> tuple:
+        """Compute the best next hub and path for the given drone zone."""
 
         distances: dict = {hub.name: float("inf") for hub in graph.hubs}
         distances[graph.finish.name] = 0

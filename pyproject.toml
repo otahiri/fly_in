@@ -8,6 +8,6 @@ dependencies = [
     "colorterm>=0.3",
     "flake8>=7.3.0",
     "mypy>=2.1.0",
-    "termcolor>=3.3.0",
+    "rich>=15.0.0",
     "webcolors>=25.10.0",
 ]

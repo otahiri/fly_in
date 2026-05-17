@@ -1,15 +1,23 @@
+"""Parsing and validation for fly-in map files."""
+
 from re import Match, compile
 from typing import List, Any
 import webcolors
 
 
 class ParsingError(Exception):
+    """Raised when the map input does not match expected constraints."""
+
     def __init__(self, *args: object) -> None:
+        """Initialize a parsing error with the provided message parts."""
         super().__init__(*args)
 
 
 class ParsedHub:
+    """Represent a validated hub entry parsed from one map line."""
+
     def __init__(self, match: Match[str], hub_type: str) -> None:
+        """Parse and validate a hub definition from a regex match."""
         raw_x = match.groupdict().get("x")
         raw_y = match.groupdict().get("y")
         valid_keys = ["zone", "color", "max_drones"]
@@ -48,8 +56,10 @@ class ParsedHub:
 
 
 class GraphData:
+    """Store all parsed graph components from map input lines."""
 
     def __init__(self, lines: List[str]) -> None:
+        """Parse map lines into hubs, links, and global graph settings."""
         hub_regex = compile(
             r"^hub:\s+(?P<name>\S+)\s(?P<x>-?\d+)\s(?P<y>-?\d+)"
             r"(?:\s+\[(?P<meta_data>.*?)\]\s?)?"
@@ -168,6 +178,7 @@ class GraphData:
         self.validate_graph()
 
     def validate_graph(self) -> None:
+        """Validate required graph rules after parsing all lines."""
         if not self.start:
             raise ParsingError("no start detected invalid map")
         if not self.finish:
