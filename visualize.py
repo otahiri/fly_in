@@ -28,7 +28,7 @@ class Renderer:
         elif zone.color.lower() == "none":
             console.print(f"{zone.name}", end="")
         else:
-            console.print(f"{zone.name}", style=hex_color(zone.color), end="")
+            console.print(f"{zone.name}", style=zone.color, end="")
         console.print(" ", end="")
 
     @staticmethod

@@ -50,6 +50,14 @@ The parser expects:
 - exactly one `end_hub: <name> <x> <y> [metadata]`
 - zero or more `hub: <name> <x> <y> [metadata]`
 - connections as `connection: <hub1>-<hub2> [max_link_capacity=<n>]` (both hubs should already exist for connection to be valid)
+## Additional
+   -no hubs should have the same name
+   -start and end should not be blocked
+   -comments should be saperate lines  as in any comments inside a line or the end of it will make the entire map invalid
+   -hubs names should not have '-' or ' '
+   -meta_data is options for all hubs / connections
+   -should there be a hub/ connection with no meta_data default values will be used as mentioned in the subject
+
 
 Supported hub metadata:
 - `zone=normal|blocked|restricted|priority`
@@ -92,18 +100,14 @@ Current visualization is **terminal-based step-by-step simulation output** (one 
 - congestion/capacity effects during simulation
 
 Additional visual features:
-- [insert whether you implemented colored terminal output]
-- [insert whether you implemented a graphical viewer]
-- [insert screenshot path or demo gif if available]
+- zones have are printed with their colors in the terminal if color is available else they will be printed with default terminal color
 
 ## Resources
 
 ### Classic references
-- [insert source: graph theory / shortest-path reference]
-- [insert source: Dijkstra algorithm documentation]
-- [insert source: Python typing / mypy docs]
-- [insert source: parsing/regex reference]
-- [insert source: any article/tutorial used]
+- dijkstra algo (algo)[https://www.geeksforgeeks.org/dsa/dijkstras-shortest-path-algorithm-greedy-algo-7/]
+- regex (regex)[https://www.w3schools.com/python/python_regex.asp]
+- min_heap (heap)[https://www.geeksforgeeks.org/dsa/heap-data-structure/]
 
 ### AI usage
 AI was used for:
@@ -111,7 +115,7 @@ AI was used for:
 - **research**
 
 Details:
-- Tool(s): [insert AI tool name(s)]
+- Tool(s): gemini and copilot cli tool
 - Tasks: debugging parser/pathfinding issues, researching algorithm and implementation ideas
-- Project parts impacted: [insert files or modules, e.g. `parsing.py`, `algo.py`]
-- Validation method: [insert how you verified/cross-checked AI output]
+- Project parts impacted:  `parsing.py`, `algo.py`
+- Validation method: manual test to verify the errors ai point out

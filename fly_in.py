@@ -3,7 +3,7 @@
 import sys
 from graph_creation import Graph
 from parsing import ParsingError
-from algo import Dijkestra
+from algo import Dijkestra, MapError
 from visualize import Renderer
 
 
@@ -17,6 +17,8 @@ def main() -> None:
             for line in map
             if len(line.strip()) and not line.strip().startswith("#")
         ]
+        lines = [line[0:line.index('#')]
+                 if '#' in line else line for line in lines]
     graph = Graph(lines)
     while True:
         if graph.finish.size == graph.drone_num:
@@ -35,8 +37,11 @@ if __name__ == "__main__":
         main()
     except (
         ParsingError,
+        MapError,
         IsADirectoryError,
         PermissionError,
         FileNotFoundError,
     ) as e:
-        print(e)
+        print(e, file=sys.stderr)
+    except (KeyboardInterrupt):
+        print("Exit by user")

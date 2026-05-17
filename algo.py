@@ -3,7 +3,10 @@
 from graph_creation import Connection, Drone, Hub, Graph
 import heapq
 
-from parsing import ParsingError
+
+class MapError(Exception):
+    def __init__(self, *args: object) -> None:
+        super().__init__(*args)
 
 
 class Dijkestra:
@@ -111,6 +114,6 @@ class Dijkestra:
         try:
             ret = parent_edges[zone.name]
         except KeyError:
-            raise ParsingError("impossible map")
+            raise MapError("impossible map")
         ret = None if ret.size >= ret.cap else ret
         return ret, Dijkestra.build_path(parent_edges, zone, graph.finish)
