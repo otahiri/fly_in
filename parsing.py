@@ -1,4 +1,4 @@
-"""Parsing and validation for fly-in map files."""
+"""Parsing and validation utilities for fly-in map files."""
 
 from re import Match, compile
 from typing import List, Any
@@ -6,18 +6,36 @@ import webcolors
 
 
 class ParsingError(Exception):
-    """Raised when the map input does not match expected constraints."""
+    """Error raised when a map line violates parsing or validation rules."""
 
     def __init__(self, *args: object) -> None:
-        """Initialize a parsing error with the provided message parts."""
+        """Initialize a parsing error.
+
+        Args:
+            *args: Error message parts forwarded to ``Exception``.
+
+        Returns:
+            None
+        """
         super().__init__(*args)
 
 
 class ParsedHub:
-    """Represent a validated hub entry parsed from one map line."""
+    """Validated hub definition parsed from one map line."""
 
     def __init__(self, match: Match[str], hub_type: str) -> None:
-        """Parse and validate a hub definition from a regex match."""
+        """Parse and validate a hub definition from a regex match.
+
+        Args:
+            match: Regex match containing hub fields and metadata groups.
+            hub_type: Hub category: ``start``, ``end``, or ``hub``.
+
+        Returns:
+            None
+
+        Raises:
+            ValueError: If any hub field or metadata value is invalid.
+        """
         raw_x = match.groupdict().get("x")
         raw_y = match.groupdict().get("y")
         valid_keys = ["zone", "color", "max_drones"]
@@ -34,6 +52,8 @@ class ParsedHub:
             if raw_meta else dict()
         )
         raw_max_drones = meta.get("max_drones")
+        if not raw_max_drones and "max_drones" in meta.keys():
+            raise ValueError("invalid max_drones")
         for word in meta.keys():
             if word not in valid_keys:
                 raise ValueError("invalid meta data")
@@ -63,11 +83,21 @@ class ParsedHub:
 
 
 class GraphData:
-    """Store all parsed graph components from map input lines."""
+    """Parsed representation of the map file graph and global settings."""
 
     def __init__(self, lines: List[str]) -> None:
+        """Parse map lines into hubs, links, and graph-level settings.
+
+        Args:
+            lines: Map lines after removing blank/comment-only rows.
+
+        Returns:
+            None
+
+        Raises:
+            ParsingError: If any line fails format or validation rules.
+        """
         current_line = ""
-        """Parse map lines into hubs, links, and global graph settings."""
         hub_regex = compile(
             r"hub:\s+(?P<name>\S+)\s(?P<x>-?\d+)\s(?P<y>-?\d+)"
             r"(?:\s+\[(?P<meta_data>.*?)\]\s?)?"
@@ -192,7 +222,14 @@ line :{line}")
         self.validate_graph()
 
     def validate_graph(self) -> None:
-        """Validate required graph rules after parsing all lines."""
+        """Validate structural constraints after parsing all map entries.
+
+        Returns:
+            None
+
+        Raises:
+            ParsingError: If required hubs are missing or constraints fail.
+        """
         if not self.start:
             raise ParsingError("no start detected invalid map")
         if not self.finish:

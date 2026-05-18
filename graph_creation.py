@@ -1,24 +1,21 @@
-"""Graph domain models used by the fly-in simulation."""
+"""Graph domain models and runtime entities for the fly-in simulation."""
 
-from enum import Enum
 from typing import List
 import parsing
 
 
-class State(Enum):
-    """Represent execution state flags for drones."""
-
-    BLOCKED = 1
-    WAITING = 2
-    EXECUTING = 3
-    READY = 4
-
-
 class Hub:
-    """Represent a graph node with zone metadata and capacities."""
+    """Graph node representing a map hub and its runtime occupancy."""
 
     def __init__(self, hub: parsing.ParsedHub | None) -> None:
-        """Initialize a hub from parsed map data."""
+        """Create a runtime hub from parsed map data.
+
+        Args:
+            hub: Parsed hub data. If ``None``, initialization is skipped.
+
+        Returns:
+            None
+        """
         if not hub:
             return
         self.name = hub.name
@@ -31,63 +28,123 @@ class Hub:
 
 
 class Connection:
-    """Represent a bidirectional edge endpoint with link capacity."""
+    """Directed view of a bidirectional map connection."""
 
     def __init__(self, hub: Hub, cap: int) -> None:
-        """Create a connection toward a target hub."""
+        """Initialize a connection toward a neighboring hub.
+
+        Args:
+            hub: Neighbor hub reached through this edge.
+            cap: Maximum number of drones allowed on the link.
+
+        Returns:
+            None
+        """
         self.hub: Hub = hub
         self.max_cap: int = cap
         self.size = 0
 
 
 class Drone:
-    """Represent a single drone moving through the graph."""
+    """Runtime state holder for one simulated drone."""
 
     def __init__(self, id: int, start: Hub) -> None:
-        """Initialize a drone at the start hub."""
+        """Initialize a drone positioned at the start hub.
+
+        Args:
+            id: Stable drone identifier used in output rendering.
+            start: Start hub where the drone begins the simulation.
+
+        Returns:
+            None
+        """
         self.id = id
         self.zone: Hub = start
-        self.state: State = State.READY
         self.destination: Connection | None = None
         self.connection: tuple = ()
         self.moved = False
         self.in_transit = False
         self.visited = [self.zone.name]
-        self.path: List[str] = []
+        self.path_len: int = 0
+        self.distance_to_finish = float('inf')
 
-    def choose_zone(self, connection: Connection | None) -> None:
-        """Assign a destination when capacity constraints allow it."""
+    def move_drone(self) -> None:
+        """Apply one movement step for a drone during the current turn.
+
+        Returns:
+            None
+        """
+        if not self.destination:
+            return
+        if not self.in_transit:
+            self.moved = True
+            self.connection = (
+                (self.destination.size, self.destination.max_cap),
+                self.zone,
+                self.destination.hub,
+            )
+            self.destination.size -= 1
+            self.zone = self.destination.hub
+            self.destination = None
+            self.in_transit = self.zone.zone == "restricted"
+            self.visited.append(self.zone.name)
+
+    def choose_zone(self, graph: "Graph") -> None:
+        """Select and reserve the next hub for a drone, when available.
+
+        Args:
+            graph: Graph containing hubs, links, and finish target.
+
+        Returns:
+            None
+        """
+        from algo import Dijkestra
+        self.moved = False
+        zone: Hub | None
+        if self.in_transit:
+            self.in_transit = False
+            return
+        if self.destination is not None:
+            return
+        path = Dijkestra.algo(graph, self)
+        if not len(path):
+            return
+        zone = path[0]
+        if not zone:
+            return
+        if zone.name in self.visited:
+            return
+        connection: Connection | None = next(
+            filter(lambda conn: conn.hub.name == zone.name,
+                   self.zone.connections),
+            None,
+        )
         if not connection:
             return
         if (
             connection.size >= connection.max_cap
             or connection.hub.size >= connection.hub.cap
         ):
-            self.state = State.WAITING
             return
         self.destination = connection
+        self.path_len = len(path)
         self.destination.size += 1
-        self.state = State.READY
-
-    def move_drone(self) -> None:
-        """Move the drone to its destination and update occupancies."""
-        if not self.destination:
-            return
-        if self.state == State.WAITING:
-            self.destination.size -= 1
-            self.state = State.READY
-            return
+        self.destination.hub.size += 1
         self.zone.size -= 1
-        self.zone = self.destination.hub
-        self.destination.size -= 1
-        self.zone.size += 1
 
 
 class Graph:
-    """Build and hold the simulation graph and drone collection."""
+    """Container for hubs, connections, and drone collection."""
 
     def __init__(self, lines: list[str]) -> None:
-        """Create hubs, connections, and drones from raw map lines."""
+        """Build a graph model and initialize drones from map lines.
+
+        Args:
+            lines: Map lines in fly-in text format.
+
+        Returns:
+            None
+        """
         parsed_graph = parsing.GraphData(lines)
         self.hubs = [Hub(hub) for hub in parsed_graph.hubs]
 
@@ -113,7 +170,14 @@ class Graph:
         ]
 
     def set_connections(self, connections: list) -> None:
-        """Attach bidirectional links between hubs from parsed data."""
+        """Attach bidirectional links between hubs.
+
+        Args:
+            connections: Parsed connection objects with node names and caps.
+
+        Returns:
+            None
+        """
         hubs = {hub.name: hub for hub in self.hubs}
 
         for conn in connections:

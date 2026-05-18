@@ -1,94 +1,79 @@
-"""Pathfinding and movement selection for drone routing."""
+"""Pathfinding and movement scheduling helpers for drone routing."""
 
-from graph_creation import Connection, Drone, Hub, Graph
+from graph_creation import Drone, Hub, Graph
 import heapq
 
 
 class MapError(Exception):
+    """Raised when an algorithm-specific map condition cannot be handled."""
+
     def __init__(self, *args: object) -> None:
+        """Initialize an algorithm map error.
+
+        Args:
+            *args: Error message parts forwarded to ``Exception``.
+
+        Returns:
+            None
+        """
         super().__init__(*args)
 
 
 class Dijkestra:
-    """Provide Dijkstra-style next-hop selection for drones."""
+    """Provide pathfinding and movement operations for drones."""
 
     @staticmethod
-    def move_drone(drone: Drone) -> None:
-        """Apply the pending movement for a drone on the current turn."""
-        if not drone.destination:
-            return
-        if not drone.in_transit:
-            drone.moved = True
-            drone.connection = (
-                (drone.destination.size, drone.destination.max_cap),
-                drone.zone,
-                drone.destination.hub,
-            )
-            drone.destination.size -= 1
-            drone.zone = drone.destination.hub
-            drone.destination = None
-            drone.in_transit = drone.zone.zone == "restricted"
-            drone.visited.append(drone.zone.name)
+    def build_path(parent_edges: dict, drone: Drone, finish: Hub) -> list:
+        """Build a path from the drone's current hub to the finish hub.
 
-    @staticmethod
-    def choose_zone(drone: Drone, graph: Graph) -> None:
-        """Pick the drone's next destination if one is available."""
-        drone.moved = False
-        zone: Hub | None
-        path: list[str]
-        if drone.in_transit:
-            drone.in_transit = False
-            return
-        if drone.destination is not None:
-            return
-        zone, path = Dijkestra.algo(graph, drone.zone)
-        if not zone:
-            return
-        if zone.name in drone.visited:
-            return
-        connection: Connection | None = next(
-            filter(lambda conn: conn.hub.name == zone.name,
-                   drone.zone.connections),
-            None,
-        )
-        if not connection:
-            return
-        if (
-            connection.size >= connection.max_cap
-            or connection.hub.size >= connection.hub.cap
-        ):
-            return
-        drone.destination = connection
-        drone.path = path
-        drone.destination.size += 1
-        drone.destination.hub.size += 1
-        drone.zone.size -= 1
+        Args:
+            parent_edges: Parent hub mapping produced by the shortest-path run.
+            drone: Drone whose current hub is used as path origin.
+            finish: Finish hub used as path destination.
 
-    @staticmethod
-    def build_path(parent_edges: dict, zone: Hub, finish: Hub) -> list:
-        """Build the backward path from a hub to the finish hub."""
+        Returns:
+            list: Ordered hubs from origin to finish, or an empty list when
+                finish is unreachable.
+        """
         path: list = []
-        while zone.name != finish.name:
+        zone = finish
+
+        if finish.name not in parent_edges:
+            return []
+
+        while zone.name != drone.zone.name:
             path.append(zone)
             zone = parent_edges[zone.name]
         return path
 
     @staticmethod
-    def algo(graph: Graph, zone: Hub) -> tuple:
-        """Compute the best next hub and path for the given drone zone."""
+    def algo(graph: Graph, drone: Drone) -> list:
+        """Compute a lowest-cost route from the drone zone to the finish.
+
+        Args:
+            graph: Graph to search.
+            drone: Drone whose current hub is the search start.
+
+        Returns:
+            list: Hubs representing the route from current zone to finish.
+                Returns an empty list when the drone is already at finish or
+                no route exists.
+        """
 
         distances: dict = {hub.name: float("inf") for hub in graph.hubs}
-        distances[graph.finish.name] = 0
-        if zone.name == graph.finish.name:
-            return None, None
+        zone = drone.zone
+        distances[zone.name] = 0
+
+        if zone.name == graph.finish:
+            return []
 
         parent_edges: dict = {}
 
-        hq: list = [(0, id(graph.finish), graph.finish)]
+        hq: list = [(0, id(zone), zone)]
 
         while hq:
             current_cost, _, current_node = heapq.heappop(hq)
-            if current_node.name == zone.name:
+            if current_node.name == graph.finish.name:
                 break
             if current_cost > distances[current_node.name]:
                 continue
@@ -101,8 +86,7 @@ class Dijkestra:
                 neighbor_cost += int(connection.hub.zone == "restricted") * 2
                 neighbor_cost += neighbor.size
                 neighbor_cost = (
-                    neighbor_cost // int(neighbor.zone == "priority") * 2
-                    if neighbor.zone == "priority"
+                    neighbor_cost // 2 if neighbor.zone == "priority"
                     else neighbor_cost
                 )
 
@@ -111,9 +95,6 @@ class Dijkestra:
                     distances[neighbor.name] = possible_cost
                     parent_edges[neighbor.name] = current_node
                     heapq.heappush(hq, (possible_cost, id(neighbor), neighbor))
-        try:
-            ret = parent_edges[zone.name]
-        except KeyError:
-            raise MapError("impossible map")
-        ret = None if ret.size >= ret.cap else ret
-        return ret, Dijkestra.build_path(parent_edges, zone, graph.finish)
+        path = Dijkestra.build_path(parent_edges, drone, graph.finish)
+        path.reverse()
+        return path
