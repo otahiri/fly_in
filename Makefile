@@ -1,4 +1,5 @@
 .PHONY: all run debug install clean lint
+
 MAP= maps/easy//01_linear_path.txt
 
 
@@ -13,7 +14,7 @@ debug:
 	python3 -m pdb fly_in.py $(MAP)
 
 install:
-	uv sync --all-groups
+	uv sync
 
 clean:
 	rm -rf .mypy_cache __pycache__

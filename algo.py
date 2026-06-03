@@ -3,6 +3,8 @@
 from graph_creation import Drone, Hub, Graph
 import heapq
 
+from parsing import ParsingError
+
 
 class MapError(Exception):
     """Raised when an algorithm-specific map condition cannot be handled."""
@@ -37,10 +39,8 @@ class Dijkestra:
         """
         path: list = []
         zone = finish
-
-        if finish.name not in parent_edges:
-            return []
-
+        if drone.zone not in parent_edges.values():
+            raise ParsingError("impossible map")
         while zone.name != drone.zone.name:
             path.append(zone)
             zone = parent_edges[zone.name]
@@ -95,6 +95,10 @@ class Dijkestra:
                     distances[neighbor.name] = possible_cost
                     parent_edges[neighbor.name] = current_node
                     heapq.heappush(hq, (possible_cost, id(neighbor), neighbor))
-        path = Dijkestra.build_path(parent_edges, drone, graph.finish)
+        try:
+            path = Dijkestra.build_path(parent_edges, drone, graph.finish)
+        except ParsingError as e:
+            print(e)
+            exit(0)
         path.reverse()
         return path

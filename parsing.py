@@ -100,7 +100,7 @@ class GraphData:
         current_line = ""
         hub_regex = compile(
             r"hub:\s+(?P<name>\S+)\s(?P<x>-?\d+)\s(?P<y>-?\d+)"
-            r"(?:\s+\[(?P<meta_data>.*?)\]\s?)?"
+            r"(?:\s+\[(?P<meta_data>.*?)\]\s?)?$"
         )
         start_regex = compile(
             r"start_hub:\s+(?P<name>\S+)\s+(?P<x>-?\d+)\s+(?P<y>-?\d+)?"
@@ -158,8 +158,8 @@ class GraphData:
                 if "-" in self.start.name:
                     raise ParsingError(f"invalid hub name line: {line}")
                 if self.start.name in [hub.name for hub in self.hubs]:
-                    raise ParsingError(f"duplicated zones are not allowed \
-line: {line}")
+                    raise ParsingError("duplicated zones are not allowed \
+line: ")
                 self.hubs.append(self.start)
 
             elif match := goal_regex.match(line):
@@ -175,16 +175,14 @@ line: {line}")
                 if "-" in self.finish.name:
                     raise ParsingError(f"invalid hub name line: {line}")
                 if self.finish.name in [hub.name for hub in self.hubs]:
-                    raise ParsingError(f"duplicated zones are not allowed \
-line: {line}")
+                    raise ParsingError("duplicated zones are not allowed")
                 self.hubs.append(self.finish)
 
             elif match := hub_regex.match(line):
                 try:
                     hub = ParsedHub(match, "hub")
                     if hub.name in [hub.name for hub in self.hubs]:
-                        raise ParsingError(f"duplicated zones are not allowed \
-line :{line}")
+                        raise ParsingError("duplicated zones are not allowed")
 
                     self.hubs.append(hub)
                 except Exception as e:
