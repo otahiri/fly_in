@@ -24,6 +24,8 @@ def main() -> None:
         PermissionError: If the map file cannot be read.
         FileNotFoundError: If the map file path does not exist.
     """
+    if len(sys.argv) != 2:
+        raise ValueError("Usage: uv run python3 'path to a valid map'")
     lines = list()
 
     with open(sys.argv[1], "r") as map:
@@ -34,19 +36,24 @@ def main() -> None:
         ]
         if not lines:
             raise ParsingError("empty map")
-        lines = [line[0:line.index('#')].strip()
-                 if '#' in line else line.strip() for line in lines]
+        lines = [
+            line[0: line.index("#")].strip() if "#" in line else line.strip()
+            for line in lines
+        ]
     graph = Graph(lines)
     drones: List[Drone] = graph.drones
     while True:
-        if graph.finish.size == graph.drone_num:
+        all_finished = all(d.zone.name == graph.finish.name and
+                           not d.in_transit
+                           and not d.destination for d in graph.drones)
+        if all_finished:
             break
         for drone in drones:
             if drone.in_transit or drone.destination is not None:
-                drone.distance_to_finish = float('inf')
+                drone.distance_to_finish = float("inf")
             else:
                 path = Dijkestra.algo(graph, drone)
-                drone.distance_to_finish = len(path) if path else float('inf')
+                drone.distance_to_finish = len(path) if path else float("inf")
         for drone in sorted(graph.drones, key=lambda x: x.distance_to_finish):
             drone.choose_zone(graph)
         for drone in sorted(graph.drones, key=lambda x: (x.path_len, x.id)):
@@ -58,15 +65,11 @@ def main() -> None:
 if __name__ == "__main__":
     try:
         main()
-    except (
-        ParsingError,
-        MapError,
-        IsADirectoryError,
-        PermissionError,
-        FileNotFoundError,
-    ) as e:
+    except (ParsingError, MapError) as e:
         print(e, file=sys.stderr)
-    except (KeyboardInterrupt):
+    except (IsADirectoryError, PermissionError, FileNotFoundError):
+        print("please provide a valid map")
+    except KeyboardInterrupt:
         print("Exit by user")
     except Exception as e:
         print(e)

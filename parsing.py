@@ -44,7 +44,8 @@ class ParsedHub:
             keys = [key.split('=')[0] for key in raw_meta.split()]
             if len(keys) != len(set(keys)):
                 raise ValueError("duplicated meta_data")
-            if any(["=" not in w and w not in valid_keys
+            if any(["=" not in w and w not in valid_keys or
+                    len(w.split('=')) != 2
                     for w in raw_meta.split()]):
                 raise ValueError("invalid meta data")
         meta = (
@@ -167,8 +168,8 @@ line: ")
                     raise ParsingError(f"duplicated goal hub line: {line}")
                 try:
                     self.finish = ParsedHub(match, "end")
-                except Exception:
-                    raise ParsingError(f"invalid finish hub line: {line}")
+                except Exception as e:
+                    raise ParsingError(f"{e} line: {line}")
                 if self.finish.zone == "blocked":
                     raise ParsingError(f"finish zone cannot be blocked line: \
 {line}")

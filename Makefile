@@ -8,13 +8,13 @@ all: run
 
 
 run:
-	uv run python3 fly_in.py $(MAP)
+	@uv run python3 fly_in.py $(MAP)
 
 debug:
-	python3 -m pdb fly_in.py $(MAP)
+	@python3 -m pdb fly_in.py $(MAP)
 
 install:
-	uv sync
+	@uv sync
 
 clean:
 	rm -rf .mypy_cache __pycache__

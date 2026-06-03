@@ -103,6 +103,7 @@ class Drone:
         zone: Hub | None
         if self.in_transit:
             self.in_transit = False
+            self.moved = True
             return
         if self.destination is not None:
             return

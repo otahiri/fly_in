@@ -64,7 +64,7 @@ class Dijkestra:
         zone = drone.zone
         distances[zone.name] = 0
 
-        if zone.name == graph.finish:
+        if zone.name == graph.finish.name:
             return []
 
         parent_edges: dict = {}
