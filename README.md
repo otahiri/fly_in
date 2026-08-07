@@ -105,9 +105,9 @@ Additional visual features:
 ## Resources
 
 ### Classic references
-- dijkstra algo (algo)[https://www.geeksforgeeks.org/dsa/dijkstras-shortest-path-algorithm-greedy-algo-7/]
-- regex (regex)[https://www.w3schools.com/python/python_regex.asp]
-- min_heap (heap)[https://www.geeksforgeeks.org/dsa/heap-data-structure/]
+- dijkstra algo [algo](https://www.geeksforgeeks.org/dsa/dijkstras-shortest-path-algorithm-greedy-algo-7/)
+- regex [regex](https://www.w3schools.com/python/python_regex.asp)
+- min_heap [heap](https://www.geeksforgeeks.org/dsa/heap-data-structure/)
 
 ### AI usage
 AI was used for:
